@@ -1,13 +1,8 @@
-# Sample Hardhat Project
+# Skrybe Contracts
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This repository contains the Solidity contracts used in the Skrybe launchpad.
 
-Try running some of the following tasks:
+Current Versioning is as follows:
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+- Skrybe Factory | v0.0.3~beta
+- Skrybe Collection | v0.0.4~beta
