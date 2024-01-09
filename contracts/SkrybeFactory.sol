@@ -18,7 +18,7 @@ contract SkrybeFactory {
         uint256 indexed _collectionId
     );
 
-    uint256 collectionNonce;
+    uint256 collectionNonce = 0;
     uint256 public BASE_FEE = 0.0005 * 1 ether;
 
     mapping(uint256 => address) collections;
@@ -36,11 +36,10 @@ contract SkrybeFactory {
     function createCollection(
         CollectionParams calldata collectionParams,
         uint256 ethscriptionBaseFee,
-        string calldata encodedParams,
         bytes calldata signature
-    ) external payable {
+    ) external {
         bytes32 message = keccak256(
-            abi.encode(msg.sender, encodedParams, "CREATE")
+            abi.encode(msg.sender, collectionParams.collectionId, "CREATE")
         );
         if (
             ECDSA.recover(ECDSA.toEthSignedMessageHash(message), signature) !=

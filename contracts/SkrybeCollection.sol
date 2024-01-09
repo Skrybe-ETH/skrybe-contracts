@@ -30,6 +30,9 @@ contract SkrybeCollection {
     /// @dev Failed to transfer Ethscription fee for ethscribing.
     error FailedToTransfer();
 
+    /// @dev Collection has not launched yet.
+    error CollectionNotLaunched();
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CUSTOM EVENTS                        */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -58,6 +61,7 @@ contract SkrybeCollection {
 
     mapping(address => bool) ADMINS;
     mapping(address => uint256) whitelistMints;
+    mapping(address => uint256) numberMinted;
     mapping(uint256 setting => uint256 value) collectionSettings;
 
     modifier onlySuperAdmin() {
@@ -96,6 +100,9 @@ contract SkrybeCollection {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function mint(uint256 amount) external payable {
+        if (block.timestamp < COLLECTION_SETTINGS.launchTimestamp) {
+            revert CollectionNotLaunched();
+        }
         if (
             msg.value !=
             ((COLLECTION_SETTINGS.price +
@@ -107,7 +114,10 @@ contract SkrybeCollection {
         if (
             (totalSupply() + amount > COLLECTION_SETTINGS.maxSupply) ||
             (COLLECTION_SETTINGS.maxPerTxn > 0 &&
-                amount > COLLECTION_SETTINGS.maxPerTxn)
+                amount > COLLECTION_SETTINGS.maxPerTxn) ||
+            (COLLECTION_SETTINGS.maxPerWallet > 0 &&
+                numberMinted[msg.sender] + amount >
+                COLLECTION_SETTINGS.maxPerWallet)
         ) {
             revert RequestingTooMany();
         }
@@ -130,12 +140,19 @@ contract SkrybeCollection {
             }
             sstore(_TOTAL_SUPPLY_SLOT, totalSupplyAfter)
         }
+
+        unchecked {
+            numberMinted[msg.sender] += amount;
+        }
     }
 
     function whitelistMint(
         uint256 amount,
         bytes calldata signature
     ) external payable {
+        if (block.timestamp < COLLECTION_SETTINGS.whitelistLaunchTimestamp) {
+            revert CollectionNotLaunched();
+        }
         if (amount + totalSupply() > COLLECTION_SETTINGS.maxSupply) {
             revert RequestingTooMany();
         }

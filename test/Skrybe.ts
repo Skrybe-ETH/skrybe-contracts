@@ -33,15 +33,10 @@ describe("SkrybeFactory", function () {
     it("Should correctly create a collection and emit event.", async function () {
       const { factory, signer, user } = await loadFixture(deploySkrybeFactory);
 
-      const structData =
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ['uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
-          [PRICE, 0, MAX_SUPPLY, MAX_PER_TXN, MAX_PER_WHITELIST, 0]
-        );
       const message = ethers.getBytes(ethers.keccak256(
         ethers.AbiCoder.defaultAbiCoder().encode(
           ['address', 'string', 'string'],
-          [user.address, structData, "CREATE"]
+          [user.address, "test", "CREATE"]
         )
       ));
       const sig = await signer.signMessage(message);
@@ -49,15 +44,17 @@ describe("SkrybeFactory", function () {
       expect(await factory.connect(user).createCollection(
         {
           "collectionId": "test",
+          "launchTimestamp": new Date().getTime(),
+          "whitelistLaunchTimestamp": 0,
           "price": PRICE,
           "whitelistPrice": 0,
           "maxSupply": MAX_SUPPLY,
           "maxPerTxn": MAX_PER_TXN,
           "maxPerWhitelist": MAX_PER_WHITELIST,
+          "maxPerWallet": 0,
           "usesWhitelist": 0
         },
         ETHSCRIPTION_BASE_FEE,
-        structData,
         sig
       )).to.emit(factory, 'CollectionCreated');
 
@@ -82,15 +79,17 @@ describe("SkrybeFactory", function () {
       await expect(factory.connect(user).createCollection(
         {
           "collectionId": "test",
+          "launchTimestamp": new Date().getTime(),
+          "whitelistLaunchTimestamp": 0,
           "price": PRICE,
           "whitelistPrice": 0,
           "maxSupply": MAX_SUPPLY,
           "maxPerTxn": MAX_PER_TXN,
           "maxPerWhitelist": MAX_PER_WHITELIST,
+          "maxPerWallet": 0,
           "usesWhitelist": 0
         },
         ETHSCRIPTION_BASE_FEE,
-        structData,
         sig
       )).to.be.revertedWithCustomError(factory, 'InvalidCreationSignature()');
     });
