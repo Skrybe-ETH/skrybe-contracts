@@ -15,7 +15,7 @@ contract SkrybeFactory {
     event CollectionCreated(
         address indexed _creator,
         address indexed _contract,
-        uint256 indexed _collectionId
+        string _collectionId
     );
 
     uint256 collectionNonce = 0;
@@ -64,7 +64,7 @@ contract SkrybeFactory {
         emit CollectionCreated(
             msg.sender,
             address(collection),
-            collectionNonce
+            collectionParams.collectionId
         );
     }
 }

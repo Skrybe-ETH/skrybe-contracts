@@ -103,12 +103,13 @@ contract SkrybeCollection {
         if (block.timestamp < COLLECTION_SETTINGS.launchTimestamp) {
             revert CollectionNotLaunched();
         }
-        if (
-            msg.value !=
-            ((COLLECTION_SETTINGS.price +
-                ETHSCRIPTION_BASE_FEE +
-                SKRYBE_BASE_FEE) * amount)
-        ) {
+
+        uint256 ethscriptionFee = (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) *
+            amount;
+        uint256 totalPrice = (COLLECTION_SETTINGS.price * amount) +
+            ethscriptionFee;
+
+        if (msg.value != totalPrice) {
             revert InvalidFeeProvided();
         }
         if (
@@ -123,7 +124,7 @@ contract SkrybeCollection {
         }
 
         (bool success, ) = address(ETHSCRIBER_ADDRESS).call{
-            value: (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) * amount
+            value: ethscriptionFee
         }("");
         if (!success) {
             revert FailedToTransfer();
@@ -141,8 +142,10 @@ contract SkrybeCollection {
             sstore(_TOTAL_SUPPLY_SLOT, totalSupplyAfter)
         }
 
-        unchecked {
-            numberMinted[msg.sender] += amount;
+        if (COLLECTION_SETTINGS.maxPerWallet != 0) {
+            unchecked {
+                numberMinted[msg.sender] += amount;
+            }
         }
     }
 
@@ -167,11 +170,12 @@ contract SkrybeCollection {
             abi.encode(msg.sender, amount, COLLECTION_SETTINGS.collectionId)
         );
 
-        if (
-            msg.value !=
-            (amount * COLLECTION_SETTINGS.whitelistPrice) +
-                (amount * SKRYBE_BASE_FEE)
-        ) {
+        uint256 ethscriptionFee = (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) *
+            amount;
+        uint256 totalPrice = (COLLECTION_SETTINGS.whitelistPrice * amount) +
+            ethscriptionFee;
+
+        if (msg.value != totalPrice) {
             revert InvalidFeeProvided();
         }
 
@@ -183,7 +187,7 @@ contract SkrybeCollection {
         }
 
         (bool success, ) = address(ETHSCRIBER_ADDRESS).call{
-            value: (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) * amount
+            value: ethscriptionFee
         }("");
         if (!success) {
             revert FailedToTransfer();
@@ -199,6 +203,12 @@ contract SkrybeCollection {
                 revert(0x1c, 0x04)
             }
             sstore(_TOTAL_SUPPLY_SLOT, totalSupplyAfter)
+        }
+
+        if (COLLECTION_SETTINGS.maxPerWhitelist > 0) {
+            unchecked {
+                whitelistMints[msg.sender] += amount;
+            }
         }
     }
 
