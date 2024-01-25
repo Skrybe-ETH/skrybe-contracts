@@ -19,10 +19,9 @@ contract SkrybeFactory {
         string _collectionId
     );
 
-    uint256 collectionNonce = 0;
     uint256 public BASE_FEE = 0.0005 * 1 ether;
 
-    mapping(uint256 => address) collections;
+    mapping(string => address) public collections;
 
     address private owner;
     address private signer;
@@ -54,14 +53,7 @@ contract SkrybeFactory {
             revert InvalidCreationSignature();
         }
 
-        unchecked {
-            collectionNonce++;
-        }
-
-        if (
-            collectionParams.launchTimestamp <= block.timestamp ||
-            collectionParams.whitelistLaunchTimestamp <= block.timestamp
-        ) {
+        if (collectionParams.launchTimestamp <= block.timestamp) {
             revert LaunchMustBeInFuture();
         }
 
@@ -74,13 +66,17 @@ contract SkrybeFactory {
             ethscriber,
             owner
         );
-        collections[collectionNonce] = address(collection);
+        collections[collectionParams.collectionId] = address(collection);
 
         emit CollectionCreated(
             msg.sender,
             address(collection),
             collectionParams.collectionId
         );
+    }
+
+    function setBaseFee(uint256 _baseFee) external onlyOwner {
+        BASE_FEE = _baseFee;
     }
 
     function setOwner(address _owner) external onlyOwner {

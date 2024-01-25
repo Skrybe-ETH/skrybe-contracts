@@ -50,8 +50,6 @@ contract SkrybeCollection {
     uint256 SKRYBE_BASE_FEE;
     uint256 ETHSCRIPTION_BASE_FEE;
 
-    uint8 IS_PAUSED = 1;
-
     address OWNER;
     address SKRYBE_SIGNER;
     address ETHSCRIBER_ADDRESS;
@@ -102,10 +100,7 @@ contract SkrybeCollection {
     function mint(uint256 amount) external payable {
         CollectionParams memory _collectionParams = COLLECTION_SETTINGS;
 
-        if (
-            block.timestamp < _collectionParams.launchTimestamp ||
-            IS_PAUSED == 2
-        ) {
+        if (block.timestamp < _collectionParams.launchTimestamp) {
             revert CollectionNotLaunched();
         }
 
@@ -154,10 +149,7 @@ contract SkrybeCollection {
     ) external payable {
         CollectionParams memory _collectionParams = COLLECTION_SETTINGS;
 
-        if (
-            block.timestamp < _collectionParams.whitelistLaunchTimestamp ||
-            IS_PAUSED == 2
-        ) {
+        if (block.timestamp < _collectionParams.whitelistLaunchTimestamp) {
             revert CollectionNotLaunched();
         }
         if (amount + TOTAL_SUPPLY > _collectionParams.maxSupply) {
@@ -247,9 +239,5 @@ contract SkrybeCollection {
 
     function transferSuperAdmin(address _super) external onlySuperAdmin {
         SUPER_ADMIN = _super;
-    }
-
-    function pauseCollection(uint8 _state) external onlySuperAdmin {
-        IS_PAUSED = _state;
     }
 }
