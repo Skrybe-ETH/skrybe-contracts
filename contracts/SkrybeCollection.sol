@@ -43,7 +43,7 @@ contract SkrybeCollection {
         uint256 indexed amount
     );
 
-    uint256 private constant _TOTAL_SUPPLY_SLOT = 0x05345cdf77eb68f44c;
+    uint256 public TOTAL_SUPPLY = 0;
 
     CollectionParams COLLECTION_SETTINGS;
 
@@ -113,7 +113,7 @@ contract SkrybeCollection {
             revert InvalidFeeProvided();
         }
         if (
-            (totalSupply() + amount > COLLECTION_SETTINGS.maxSupply) ||
+            (TOTAL_SUPPLY + amount > COLLECTION_SETTINGS.maxSupply) ||
             (COLLECTION_SETTINGS.maxPerTxn > 0 &&
                 amount > COLLECTION_SETTINGS.maxPerTxn) ||
             (COLLECTION_SETTINGS.maxPerWallet > 0 &&
@@ -130,16 +130,10 @@ contract SkrybeCollection {
             revert FailedToTransfer();
         }
 
-        emit Mint(msg.sender, totalSupply(), amount);
+        emit Mint(msg.sender, TOTAL_SUPPLY, amount);
 
-        assembly {
-            let totalSupplyBefore := sload(_TOTAL_SUPPLY_SLOT)
-            let totalSupplyAfter := add(_TOTAL_SUPPLY_SLOT, amount)
-            if lt(totalSupplyAfter, totalSupplyBefore) {
-                mstore(0x00, 0xe5cfe957) // `TotalSupplyOverflow()`
-                revert(0x1c, 0x04)
-            }
-            sstore(_TOTAL_SUPPLY_SLOT, totalSupplyAfter)
+        unchecked {
+            TOTAL_SUPPLY += amount;
         }
 
         if (COLLECTION_SETTINGS.maxPerWallet != 0) {
@@ -156,7 +150,7 @@ contract SkrybeCollection {
         if (block.timestamp < COLLECTION_SETTINGS.whitelistLaunchTimestamp) {
             revert CollectionNotLaunched();
         }
-        if (amount + totalSupply() > COLLECTION_SETTINGS.maxSupply) {
+        if (amount + TOTAL_SUPPLY > COLLECTION_SETTINGS.maxSupply) {
             revert RequestingTooMany();
         }
         if (
@@ -193,16 +187,10 @@ contract SkrybeCollection {
             revert FailedToTransfer();
         }
 
-        emit Mint(msg.sender, totalSupply(), amount);
+        emit Mint(msg.sender, TOTAL_SUPPLY, amount);
 
-        assembly {
-            let totalSupplyBefore := sload(_TOTAL_SUPPLY_SLOT)
-            let totalSupplyAfter := add(_TOTAL_SUPPLY_SLOT, amount)
-            if lt(totalSupplyAfter, totalSupplyBefore) {
-                mstore(0x00, 0xe5cfe957) // `TotalSupplyOverflow()`
-                revert(0x1c, 0x04)
-            }
-            sstore(_TOTAL_SUPPLY_SLOT, totalSupplyAfter)
+        unchecked {
+            TOTAL_SUPPLY += amount;
         }
 
         if (COLLECTION_SETTINGS.maxPerWhitelist > 0) {
@@ -212,10 +200,8 @@ contract SkrybeCollection {
         }
     }
 
-    function totalSupply() public view returns (uint256 result) {
-        assembly {
-            result := sload(_TOTAL_SUPPLY_SLOT)
-        }
+    function totalSupply() public view returns (uint256) {
+        return TOTAL_SUPPLY;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
