@@ -11,6 +11,7 @@ contract SkrybeFactory {
     error InvalidCreationSignature();
     error InvalidEditSignature();
     error MustOwnCollection();
+    error LaunchMustBeInFuture();
 
     event CollectionCreated(
         address indexed _creator,
@@ -26,6 +27,11 @@ contract SkrybeFactory {
     address private owner;
     address private signer;
     address private ethscriber;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Must be owner");
+        _;
+    }
 
     constructor(address _signer, address _ethscriber) {
         owner = msg.sender;
@@ -48,7 +54,16 @@ contract SkrybeFactory {
             revert InvalidCreationSignature();
         }
 
-        collectionNonce++;
+        unchecked {
+            collectionNonce++;
+        }
+
+        if (
+            collectionParams.launchTimestamp <= block.timestamp ||
+            collectionParams.whitelistLaunchTimestamp <= block.timestamp
+        ) {
+            revert LaunchMustBeInFuture();
+        }
 
         SkrybeCollection collection = new SkrybeCollection(
             collectionParams,
@@ -66,5 +81,17 @@ contract SkrybeFactory {
             address(collection),
             collectionParams.collectionId
         );
+    }
+
+    function setOwner(address _owner) external onlyOwner {
+        owner = _owner;
+    }
+
+    function setSigner(address _signer) external onlyOwner {
+        signer = _signer;
+    }
+
+    function setEthscriber(address _ethscriber) external onlyOwner {
+        ethscriber = _ethscriber;
     }
 }

@@ -45,12 +45,12 @@ contract SkrybeCollection {
 
     uint256 public TOTAL_SUPPLY = 0;
 
-    CollectionParams COLLECTION_SETTINGS;
+    CollectionParams public COLLECTION_SETTINGS;
 
     uint256 SKRYBE_BASE_FEE;
     uint256 ETHSCRIPTION_BASE_FEE;
 
-    bool IS_PAUSED;
+    uint8 IS_PAUSED = 1;
 
     address OWNER;
     address SKRYBE_SIGNER;
@@ -100,25 +100,30 @@ contract SkrybeCollection {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function mint(uint256 amount) external payable {
-        if (block.timestamp < COLLECTION_SETTINGS.launchTimestamp) {
+        CollectionParams memory _collectionParams = COLLECTION_SETTINGS;
+
+        if (
+            block.timestamp < _collectionParams.launchTimestamp ||
+            IS_PAUSED == 2
+        ) {
             revert CollectionNotLaunched();
         }
 
         uint256 ethscriptionFee = (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) *
             amount;
-        uint256 totalPrice = (COLLECTION_SETTINGS.price * amount) +
+        uint256 totalPrice = (_collectionParams.price * amount) +
             ethscriptionFee;
 
         if (msg.value != totalPrice) {
             revert InvalidFeeProvided();
         }
         if (
-            (TOTAL_SUPPLY + amount > COLLECTION_SETTINGS.maxSupply) ||
-            (COLLECTION_SETTINGS.maxPerTxn > 0 &&
-                amount > COLLECTION_SETTINGS.maxPerTxn) ||
-            (COLLECTION_SETTINGS.maxPerWallet > 0 &&
+            (TOTAL_SUPPLY + amount > _collectionParams.maxSupply) ||
+            (_collectionParams.maxPerTxn > 0 &&
+                amount > _collectionParams.maxPerTxn) ||
+            (_collectionParams.maxPerWallet > 0 &&
                 numberMinted[msg.sender] + amount >
-                COLLECTION_SETTINGS.maxPerWallet)
+                _collectionParams.maxPerWallet)
         ) {
             revert RequestingTooMany();
         }
@@ -136,7 +141,7 @@ contract SkrybeCollection {
             TOTAL_SUPPLY += amount;
         }
 
-        if (COLLECTION_SETTINGS.maxPerWallet != 0) {
+        if (_collectionParams.maxPerWallet != 0) {
             unchecked {
                 numberMinted[msg.sender] += amount;
             }
@@ -147,26 +152,31 @@ contract SkrybeCollection {
         uint256 amount,
         bytes calldata signature
     ) external payable {
-        if (block.timestamp < COLLECTION_SETTINGS.whitelistLaunchTimestamp) {
+        CollectionParams memory _collectionParams = COLLECTION_SETTINGS;
+
+        if (
+            block.timestamp < _collectionParams.whitelistLaunchTimestamp ||
+            IS_PAUSED == 2
+        ) {
             revert CollectionNotLaunched();
         }
-        if (amount + TOTAL_SUPPLY > COLLECTION_SETTINGS.maxSupply) {
+        if (amount + TOTAL_SUPPLY > _collectionParams.maxSupply) {
             revert RequestingTooMany();
         }
         if (
-            COLLECTION_SETTINGS.maxPerWhitelist > 0 &&
+            _collectionParams.maxPerWhitelist > 0 &&
             (whitelistMints[msg.sender] + amount >
-                COLLECTION_SETTINGS.maxPerWhitelist)
+                _collectionParams.maxPerWhitelist)
         ) {
             revert RequestingMoreThanWhitelistAllows();
         }
         bytes32 message = keccak256(
-            abi.encode(msg.sender, amount, COLLECTION_SETTINGS.collectionId)
+            abi.encode(msg.sender, amount, _collectionParams.collectionId)
         );
 
         uint256 ethscriptionFee = (SKRYBE_BASE_FEE + ETHSCRIPTION_BASE_FEE) *
             amount;
-        uint256 totalPrice = (COLLECTION_SETTINGS.whitelistPrice * amount) +
+        uint256 totalPrice = (_collectionParams.whitelistPrice * amount) +
             ethscriptionFee;
 
         if (msg.value != totalPrice) {
@@ -193,7 +203,7 @@ contract SkrybeCollection {
             TOTAL_SUPPLY += amount;
         }
 
-        if (COLLECTION_SETTINGS.maxPerWhitelist > 0) {
+        if (_collectionParams.maxPerWhitelist > 0) {
             unchecked {
                 whitelistMints[msg.sender] += amount;
             }
@@ -239,7 +249,7 @@ contract SkrybeCollection {
         SUPER_ADMIN = _super;
     }
 
-    function pauseCollection(bool _state) external onlySuperAdmin {
+    function pauseCollection(uint8 _state) external onlySuperAdmin {
         IS_PAUSED = _state;
     }
 }
